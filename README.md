@@ -1,7 +1,16 @@
 # Raycast
 
-This repo holds an implementation of ray casting using raylib
-for visualization. The inspiration came from [this repo](https://github.com/ssloy/tinyraycaster/wiki/).
+# Goals
 
-https://github.com/JLanzuisi/raycast/assets/15838201/bd7a2646-b4f9-4719-a473-b7591d38062c
+[] Move from current raylib+C to ts+Canvas2D.
+[] Finish a basic, and proper, raycaster.
+[] Look into adding more advanced features to it,
+   like variable height walls.
+
+# References
+
+- https://lodev.org/cgtutor/raycasting.html
+- https://github.com/tsoding/koil
+- https://github.com/vinibiavatti1/RayCastingTutorial
+- https://fabiensanglard.net/three_books_update/
 
