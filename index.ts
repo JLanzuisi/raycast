@@ -11,7 +11,7 @@ function Vec2Norm(vec: Vector2): Vector2 {
 function getRayLength(dir: Vector2, init: Vector2): number {
   let drawDistance = 10000;
   let len = 0;
-  let untiScale: Vector2 = {
+  let unitScale: Vector2 = {
     x: Math.sqrt(1 + (dir.y / dir.x) * (dir.y / dir.x)),
     y: Math.sqrt(1 + (dir.x / dir.y) * (dir.x / dir.y)),
   };
@@ -36,18 +36,18 @@ function getRayLength(dir: Vector2, init: Vector2): number {
 
     if (dir.x > 0) {
       step.x = 1;
-      diag.x = untiScale.x * ((cell.col + 1) * squareSize - pos.x);
+      diag.x = unitScale.x * ((cell.col + 1) * squareSize - pos.x);
     } else {
       step.x = -1;
-      diag.x = untiScale.x * (pos.x - cell.col * squareSize);
+      diag.x = unitScale.x * (pos.x - cell.col * squareSize);
     }
 
     if (dir.y > 0) {
       step.y = 1;
-      diag.y = untiScale.y * ((cell.row + 1) * squareSize - pos.y);
+      diag.y = unitScale.y * ((cell.row + 1) * squareSize - pos.y);
     } else {
       step.y = -1;
-      diag.y = untiScale.y * (pos.y - cell.row * squareSize);
+      diag.y = unitScale.y * (pos.y - cell.row * squareSize);
     }
 
     if (diag.x < diag.y) {
@@ -64,55 +64,7 @@ function getRayLength(dir: Vector2, init: Vector2): number {
   return len;
 }
 
-const canvas = <HTMLCanvasElement>document.getElementById("canvas");
-if (canvas === null) {
-  throw new Error("Canvas is null.");
-}
-
-const padding = 50;
-const width = window.innerHeight - padding;
-const height = window.innerHeight - padding;
-const grid = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 1, 1, 1, 1, 1, 0],
-  [0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-  [1, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-];
-const squareSize = width / grid.length;
-const gridWidth = squareSize * grid.length;
-const gridHeight = squareSize * grid.length;
-
-let player = {
-  pos: { row: 5, col: 3 },
-  dir: Vec2Norm({ x: 1, y: 0.2 }),
-  camera: { x: 1, y: 0 },
-};
-
-let palette = {
-  bg: "#D3D3D3",
-  fg: "#000000",
-  wall: "#4f2525",
-  player: "#ADD8E6",
-};
-
-function drawFrame(timestamp: number) {
-  const ctx = canvas.getContext("2d");
-  if (ctx === null) {
-    throw new Error("ctx is null.");
-  }
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // clear canvas
-  ctx.fillStyle = palette.bg;
-  ctx.strokeStyle = palette.fg;
-  ctx.lineWidth = 0.5;
-
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
+function drawGrid(ctx: CanvasRenderingContext2D) {
   for (let i = 0; i <= grid.length; i++) {
     ctx.beginPath();
     ctx.moveTo(i * squareSize, 0);
@@ -147,6 +99,60 @@ function drawFrame(timestamp: number) {
       }
     }
   }
+}
+
+// TODO: take Player as arg and calculate playerX playerY or something
+function drawDirCam(
+  ctx: CanvasRenderingContext2D,
+  playerX: number,
+  playerY: number
+) {
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.strokeStyle = "red";
+  ctx.moveTo(playerX, playerY);
+  ctx.lineTo(
+    playerX + player.dir.x * squareSize,
+    playerY + player.dir.y * squareSize
+  );
+  ctx.stroke();
+  ctx.closePath();
+
+  ctx.beginPath();
+  ctx.strokeStyle = "blue";
+  ctx.moveTo(
+    playerX + player.dir.x * squareSize,
+    playerY + player.dir.y * squareSize
+  );
+  ctx.lineTo(
+    playerX + (player.dir.x + player.camera.x) * squareSize,
+    playerY + (player.dir.y + player.camera.y) * squareSize
+  );
+  ctx.moveTo(
+    playerX + player.dir.x * squareSize,
+    playerY + player.dir.y * squareSize
+  );
+  ctx.lineTo(
+    playerX + (player.dir.x - player.camera.x) * squareSize,
+    playerY + (player.dir.y - player.camera.y) * squareSize
+  );
+  ctx.stroke();
+  ctx.closePath();
+}
+
+function drawFrame(timestamp: number) {
+  const ctx = canvas.getContext("2d");
+  if (ctx === null) {
+    throw new Error("ctx is null.");
+  }
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // clear canvas
+  ctx.fillStyle = palette.bg;
+  ctx.strokeStyle = palette.fg;
+  ctx.lineWidth = 0.5;
+
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  drawGrid(ctx);
 
   let playerX = (player.pos.col + 0.5) * squareSize;
   let playerY = (player.pos.row + 0.5) * squareSize;
@@ -159,25 +165,75 @@ function drawFrame(timestamp: number) {
   ctx.stroke();
   ctx.closePath();
 
-  // console.log(timestamp % 1000);
-  if (timestamp % 500 < 20) {
-    let theta = Math.PI / 12;
-    player.dir = {
-      x: player.dir.x * Math.cos(theta) - player.dir.y * Math.sin(theta),
-      y: player.dir.x * Math.sin(theta) + player.dir.y * Math.cos(theta),
-    };
-  }
+  drawDirCam(ctx, playerX, playerY);
+
+  // if (timestamp % 500 < 20) {
+  //   let theta = Math.PI / 18;
+  //   player.changeDir({
+  //     x: player.dir.x * Math.cos(theta) - player.dir.y * Math.sin(theta),
+  //     y: player.dir.x * Math.sin(theta) + player.dir.y * Math.cos(theta),
+  //   });
+  // }
 
   window.requestAnimationFrame(drawFrame);
 }
 
+const canvas = <HTMLCanvasElement>document.getElementById("canvas");
+if (canvas === null) {
+  throw new Error("Canvas is null.");
+}
+
+const VPadding = 50;
+const HPadding = 50;
+const width = window.innerWidth - HPadding;
+const height = window.innerHeight - VPadding;
+const grid = [
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 1, 0, 0, 1, 1, 1, 1, 1, 0],
+  [0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+  [1, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+];
+const squareSize = height / 1 / grid.length;
+const gridWidth = squareSize * grid.length;
+const gridHeight = squareSize * grid.length;
+
+class Player {
+  pos;
+  dir: Vector2;
+  camera: Vector2;
+
+  constructor(pos = { row: 5, col: 3 }, dir: Vector2 = { x: 1, y: 0.2 }) {
+    this.pos = pos;
+    this.dir = Vec2Norm(dir);
+    // https://mathworld.wolfram.com/PerpendicularVector.html
+    // Camera is same length as direction, so 90 deg FOV
+    this.camera = { x: -this.dir.y, y: this.dir.x };
+  }
+
+  changeDir(dir: Vector2) {
+    this.dir = dir;
+    this.camera = { x: -this.dir.y, y: this.dir.x };
+  }
+}
+
+let player = new Player();
+
+const palette = {
+  bg: "#D3D3D3",
+  fg: "#000000",
+  wall: "#4f2525",
+  player: "#ADD8E6",
+};
+
 (() => {
   canvas.width = width;
   canvas.height = height;
-
-  // console.log(`Before: ${player.dir.x}, ${player.dir.y}`);
-
-  // console.log(`After: ${player.dir.x}, ${player.dir.y}`);
 
   drawFrame(0);
 })();
